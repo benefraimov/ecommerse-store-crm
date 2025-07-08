@@ -4,8 +4,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import axios from 'axios';
-import { Button, TextField, CircularProgress, Paper, Typography, Box, Grid } from '@mui/material';
+import { Button, TextField, CircularProgress, Paper, Typography, Box, Grid, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material';
 import { fetchAdminProducts, updateProduct, resetAdminProductStatus } from '../features/products/adminProductSlice';
+import { getImageUrl } from '../utils/imageUtils';
 
 const ProductEditPage = () => {
 	const { id: productId } = useParams();
@@ -19,6 +20,9 @@ const ProductEditPage = () => {
 	const [description, setDescription] = useState('');
 	const [uploading, setUploading] = useState(false);
 
+	// State for choosing image input method
+	const [imageInputMethod, setImageInputMethod] = useState('url');
+
 	const { products, isLoading, isError, isSuccess, message } = useSelector((state) => state.adminProducts);
 
 	useEffect(() => {
@@ -29,12 +33,12 @@ const ProductEditPage = () => {
 		if (isError) {
 			toast.error(message);
 		}
-		return () => {
-			dispatch(resetAdminProductStatus());
-		};
 	}, [isSuccess, isError, message, navigate, dispatch]);
 
 	useEffect(() => {
+		// התיקון כאן: מאפסים את הסטטוס מיד עם טעינת העמוד
+		dispatch(resetAdminProductStatus());
+
 		const product = products.find((p) => p._id === productId);
 		if (product) {
 			setName(product.name);
@@ -55,6 +59,7 @@ const ProductEditPage = () => {
 
 	const uploadFileHandler = async (e) => {
 		const file = e.target.files[0];
+		if (!file) return;
 		const formData = new FormData();
 		formData.append('image', file);
 		setUploading(true);
@@ -63,52 +68,73 @@ const ProductEditPage = () => {
 			const { data } = await axios.post('/api/upload', formData, config);
 			setImage(data.image);
 			setUploading(false);
+			toast.success('התמונה הועלתה בהצלחה');
 		} catch (error) {
 			toast.error('העלאת התמונה נכשלה');
 			setUploading(false);
 		}
 	};
 
+	const handleInputMethodChange = (e) => {
+		setImageInputMethod(e.target.value);
+		setImage(''); // איפוס התמונה при שינוי שיטה
+	};
+
+	if (isLoading && !products.length) return <CircularProgress />;
+
 	return (
 		<Paper sx={{ p: 3 }}>
-			<Link to='/products'>חזרה לרשימת המוצרים</Link>
-			<Typography variant='h5' sx={{ my: 2 }}>
+			<Button component={Link} to='/products' sx={{ mb: 2 }}>
+				חזרה לרשימת המוצרים
+			</Button>
+			<Typography variant='h5' sx={{ mb: 2 }}>
 				עריכת מוצר
 			</Typography>
-			{isLoading ? (
-				<CircularProgress />
-			) : (
-				<Box component='form' onSubmit={submitHandler}>
-					<Grid container spacing={2}>
-						<Grid item xs={12}>
-							<TextField fullWidth label='שם המוצר' value={name} onChange={(e) => setName(e.target.value)} />
-						</Grid>
-						<Grid item xs={12} sm={6}>
-							<TextField fullWidth label='מחיר' type='number' value={price} onChange={(e) => setPrice(e.target.value)} />
-						</Grid>
-						<Grid item xs={12} sm={6}>
-							<TextField fullWidth label='מלאי' type='number' value={stock} onChange={(e) => setStock(e.target.value)} />
-						</Grid>
-						<Grid item xs={12}>
-							<TextField fullWidth label='נתיב תמונה' value={image} onChange={(e) => setImage(e.target.value)} />
-						</Grid>
-						<Grid item xs={12}>
-							<Button variant='contained' component='label'>
-								העלה תמונה <input type='file' hidden onChange={uploadFileHandler} />
-							</Button>
-							{uploading && <CircularProgress size={20} sx={{ ml: 2 }} />}
-						</Grid>
-						<Grid item xs={12}>
-							<TextField fullWidth label='תיאור' multiline rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
-						</Grid>
-						<Grid item xs={12}>
-							<Button type='submit' variant='contained' disabled={isLoading}>
-								עדכן מוצר
-							</Button>
-						</Grid>
+			<Box component='form' onSubmit={submitHandler}>
+				<Grid container spacing={3}>
+					{/* Column for details */}
+					<Grid item xs={12} md={8}>
+						<TextField fullWidth label='שם המוצר' value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} required />
+						<TextField fullWidth label='מחיר' type='number' value={price} onChange={(e) => setPrice(e.target.value)} sx={{ mb: 2 }} required />
+						<TextField fullWidth label='מלאי' type='number' value={stock} onChange={(e) => setStock(e.target.value)} sx={{ mb: 2 }} required />
+						<TextField fullWidth label='תיאור' multiline rows={6} value={description} onChange={(e) => setDescription(e.target.value)} required />
 					</Grid>
-				</Box>
-			)}
+					{/* Column for image */}
+					<Grid item xs={12} md={4}>
+						<FormControl component='fieldset'>
+							<FormLabel component='legend'>אפשרות תמונה</FormLabel>
+							<RadioGroup row value={imageInputMethod} onChange={handleInputMethodChange}>
+								<FormControlLabel value='url' control={<Radio />} label='כתובת URL' />
+								<FormControlLabel value='upload' control={<Radio />} label='העלאת קובץ' />
+							</RadioGroup>
+						</FormControl>
+
+						{imageInputMethod === 'url' && <TextField fullWidth label='נתיב תמונה' value={image} onChange={(e) => setImage(e.target.value)} sx={{ mt: 1 }} />}
+
+						{imageInputMethod === 'upload' && (
+							<Box sx={{ mt: 2 }}>
+								<Button variant='outlined' component='label' fullWidth>
+									בחר קובץ
+									<input type='file' hidden onChange={uploadFileHandler} />
+								</Button>
+								{uploading && <CircularProgress size={24} sx={{ mt: 1 }} />}
+							</Box>
+						)}
+
+						{image && (
+							<Box sx={{ mt: 2, border: '1px solid #ddd', p: 1, borderRadius: 1 }}>
+								<Typography variant='caption'>תצוגה מקדימה:</Typography>
+								<img src={getImageUrl(image)} alt='תצוגה מקדימה' style={{ width: '100%', marginTop: '8px', borderRadius: '4px' }} />
+							</Box>
+						)}
+					</Grid>
+					<Grid item xs={12}>
+						<Button type='submit' variant='contained' disabled={isLoading} sx={{ mt: 2 }}>
+							{isLoading ? 'מעדכן...' : 'עדכן מוצר'}
+						</Button>
+					</Grid>
+				</Grid>
+			</Box>
 		</Paper>
 	);
 };

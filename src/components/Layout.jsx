@@ -74,7 +74,7 @@ const Layout = () => {
 					{/* 3. הוספת שם המשתמש וכפתור ההתנתקות */}
 					{user && (
 						<Box sx={{ display: 'flex', alignItems: 'center' }}>
-							<Typography sx={{ ml: 2 }}>שלום, {user.username}</Typography>
+							<Typography sx={{ ml: 2 }}>{user.username}</Typography>
 							<Tooltip title='התנתק'>
 								<IconButton color='inherit' onClick={logoutHandler}>
 									<LogoutIcon />

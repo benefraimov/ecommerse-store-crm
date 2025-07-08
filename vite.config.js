@@ -9,10 +9,12 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: "https://ecommerse-api.zoomtech.co.il",
+        // target: "http://localhost:5001",
         changeOrigin: true
       },
       '/uploads': {
         target: "https://ecommerse-api.zoomtech.co.il",
+        // target: "http://localhost:5001",
         changeOrigin: true
       }
     }
