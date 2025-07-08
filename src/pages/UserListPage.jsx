@@ -28,7 +28,9 @@ const UserListPage = () => {
 		return <Typography color='error'>שגיאה: {message}</Typography>;
 	}
 
-	const handleToggleAdmin = (userId) => {
+	const handleToggleAdmin = (e, userId) => {
+		e.stopPropagation();
+
 		dispatch(toggleAdminStatus(userId))
 			.unwrap()
 			.then(() => toast.success('הרשאות המשתמש עודכנו'))
@@ -58,10 +60,10 @@ const UserListPage = () => {
 									<TableCell>{user.username}</TableCell>
 									<TableCell>{user.email}</TableCell>
 									<TableCell>{user.isAdmin ? <CheckCircle color='success' /> : <Cancel color='error' />}</TableCell>
-									<TableCell>
+									<TableCell align='center' onClick={(e) => e.stopPropagation()}>
 										<Switch
 											checked={user.isAdmin}
-											onChange={() => handleToggleAdmin(user._id, user.isAdmin)}
+											onChange={(e) => handleToggleAdmin(e, user._id)}
 											// מאפשר עריכה רק אם אתה הסופר אדמין, ולא עורך את עצמך
 											disabled={
 												loggedInUser.email !== (import.meta.env.VITE_ENVIRONMENT === 'production' ? import.meta.env.VITE_SUPER_ADMIN_EMAI : import.meta.env.VITE_SUPER_ADMIN_EMAIL_DEV) ||
